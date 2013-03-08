@@ -1,0 +1,32 @@
+General
+=======
+
+This project is currently an experiment to gain some binary file progression
+and come up with a trivial PlayStation 1 memory card image parser and editor.
+
+I recently managed to image my old memory cards courtesy of an imported
+DexDrive (https://en.wikipedia.org/wiki/Dexdrive), however I found that while I
+could use my Final Fantasy VIII saves on my PlayStation 2, all attempts to use
+them in pcsx-rearmed on the Open Pandora (https://en.wikipedia.org/wiki/Open_pandora)
+failed - supposedly they were corrupt. I can create a save on the Pandora which
+then works on the console, but not vice versa... so the adventure begins - I
+would like to see if I can fix this.
+
+
+Requirements
+============
+
+Python v3.? - not 2 in order to have more competent unicode management.
+
+
+Documentation
+=============
+
+See memcard-analyser.py --help, although this is mainly an experiment so there
+wont be much useful there (ping me if this matters).
+
+
+Contact Details
+===============
+
+OmegaPhil: OmegaPhil+memcard-analyser@gmail.com
