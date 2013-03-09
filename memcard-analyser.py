@@ -100,17 +100,6 @@ COUNTRY_CODE = {b'BI': 'Japan',
 translationTable = bytes(''.join([['.', chr(x)][chr(x) in string.printable]
                             for x in range(256)]), 'ascii')
 
-def shift_jis2unicode(byte):
-    
-    # charcode is an integer
-    # Source: http://stackoverflow.com/a/9437470
-    
-    if byte > bytes(0xFF):
-        byte >>= 8 + (byte & 0xFF)
-
-    #return ord(string.decode('shift-jis'))
-    return byte.decode('shift-jis')
-
 class PS1Card(object):
     '''Representation of memory card, also maintaining the original data'''
     
