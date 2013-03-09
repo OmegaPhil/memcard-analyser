@@ -377,11 +377,6 @@ class PS1Card(object):
         # Note the leading 'b and trailing '
         #print('Control block:\n\n%s' % controlBlock.translate(translationTable))
         
-        
-        # Looping for all blocks in card - 16 blocks, first is metadata
-#        for blockNumber in range(15):
-#            read_block(blockNumber)
-
 
 class PS1CardBlock(object):
     
