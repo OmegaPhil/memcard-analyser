@@ -77,9 +77,12 @@ SAVE_LENGTH = {b'\x00\x20\x00': '1 block',
                b'\x00\xA0\x01': '13 blocks',
                b'\x00\xC0\x01': '14 blocks',
                b'\x00\xE0\x01': '15 blocks'}
-COUNTRY_CODE = {b'BI': 'Japan',
+COUNTRY_CODE = {b'BI': 'Japan',  # Road Rash has saves which use the lower
+                b'bi': 'Japan',  # case country code...
                  b'BA': 'America',
-                 b'BE': 'Europe'}  
+                 b'ba': 'America',
+                 b'BE': 'Europe',
+                 b'be': 'Europe'}
 
 # Creating a translation table to map non-printables to full stop
 # (periods for Americans). Specifically ignoring whitespace here
