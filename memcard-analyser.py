@@ -267,30 +267,37 @@ class PS1Card(object):
             # frame per block described)
             offset = blockNumber * FRAME_SIZE
 
-            # Making sure the frame is valid - XORing all but last bytes and
-            # comparing to stored XOR (last byte)
+            # Making sure the frame is valid - XORing all but last byte and
+            # comparing later to stored XOR (last byte) - delaying comparison
+            # to account for single/multiblock saves (see later)
             accumulator = 0
             for byteAddress in range(offset, offset + FRAME_SIZE - 1):
                 accumulator ^= controlBlock[byteAddress]
-            if accumulator != controlBlock[offset + FRAME_SIZE - 1]:
-                raise Exception('The passed memory card \'%s\' contains an '
-                                'invalid frame in the control block (frame %d'
-                                ' of block 0), and is therefore corrupt'
-                                % (self.path, offset / FRAME_SIZE))
+            storedXOR = controlBlock[offset + FRAME_SIZE - 1]
             
             # Debug code
             #print('accumulator: %d\nActual XOR: %d' % (accumulator,
             #                            controlBlock[offset + FRAME_SIZE - 1]))
-            
-            # Is block in use, a normal block or a link block (and where the
-            # link is relatively in a multi-block save)
+
+            # Is block in use, a normal block, a link block (and where the
+            # link is relatively in a multi-block save) or unusable
             blockStatus = controlBlock[offset]
-            
-            # Checking if the block is a 'first block' on its own or in a
-            # multiblock save
+
+            # Checking block status
             if blockStatus == 0x51:
                 
-                # It is - processing
+                # First block on its own or the first block in a multiblock
+                # save - checking the frame XOR
+                if accumulator != storedXOR:
+                    raise Exception('The passed memory card \'%s\' contains an'
+                                    ' invalid frame in the control block ('
+                                    'frame %d of block 0), and is therefore '
+                                    'corrupt\n\n'
+                                    'Calculated XOR value: %s\nRecorded value:'
+                                    ' %s' % (self.path, offset / FRAME_SIZE,
+                                       accumulator,
+                                       controlBlock[offset + FRAME_SIZE - 1]))
+
                 # How many blocks the save consists of. This is only valid if the
                 # block is the first block in the save - otherwise its always 1
                 # block long
@@ -310,13 +317,42 @@ class PS1Card(object):
                 # progress (new game = new playthrough)
                 gamePlayThroughIdentifier = controlBlock[offset + 22:offset + 31]
             
-            else:
+            elif (blockStatus == 0x52 or blockStatus == 0x53):
+
+                # Block is in the middle or at the end of a multiblock save
+                # I have now got 3 examples of 'corrupt' frames with
+                # >first block in multiblock saves - Gran Turismo, Gran
+                # Turismo 2 and Tomb Raider - The Last Revelation. Testing GT1
+                # specifically, copying the save to a different card and
+                # reimaging results in exactly the same XOR failure - yet the
+                # save loads fine on the PS2. It flat out doesnt on the
+                # Pandora, but there'll be another reason for that. Because it
+                # works on the console, I think this isn't a real example of
+                # corruption
+                if accumulator != storedXOR:
+                    print('Warning: The passed memory card \'%s\' contains an'
+                    ' invalid frame in the control block (frame %d of block 0)'
+                    ', and is therefore in theory corrupt. However, I have '
+                    'examples of multiblock saves where they appear to work'
+                    ' fine - so just raising a warning\n\n'
+                    'Calculated XOR value: %s\nRecorded value: %s\n' %
+                    (self.path, offset / FRAME_SIZE, accumulator,
+                    controlBlock[offset + FRAME_SIZE - 1]), file=sys.stderr)
                 
-                # It isn't - it is either unused or part of a multiblock save
-                # - setting variables to None
+                # Setting variables to None
                 # It seems in linked saves, middle blocks onwards have old
                 # (past save?) data saved in these metadata frames, and are
                 # therefore invalid
+                gamePlayThroughIdentifier = productCode = countryCode = saveNextBlock = saveLength = None
+
+            elif blockStatus == 0xFF:
+
+                # Block is unusable - no XOR check needed - warning user
+                print('Warning: The passed memory card \'%s\' contains block '
+                      '%d which is flagged as unusable' % (self.path,
+                                                blockNumber), file=sys.stderr)
+
+                # Setting variables to None
                 gamePlayThroughIdentifier = productCode = countryCode = saveNextBlock = saveLength = None
                 
             # Instantiating memory card block object and saving - note that
