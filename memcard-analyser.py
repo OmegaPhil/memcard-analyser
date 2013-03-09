@@ -276,7 +276,7 @@ class PS1Card(object):
                 raise Exception('The passed memory card \'%s\' contains an '
                                 'invalid frame in the control block (frame %d'
                                 ' of block 0), and is therefore corrupt'
-                                % offset / FRAME_SIZE, self.path)
+                                % (self.path, offset / FRAME_SIZE))
             
             # Debug code
             #print('accumulator: %d\nActual XOR: %d' % (accumulator,
