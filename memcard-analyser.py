@@ -278,12 +278,29 @@ class PS1Card(object):
             offset = blockNumber * FRAME_SIZE
 
             # Making sure the frame is valid - XORing all but last byte and
-            # comparing later to stored XOR (last byte) - delaying comparison
-            # to account for single/multiblock saves (see later)
+            # comparing later to stored XOR (last byte) - this is a warning
+            # rather than an error, since my Tomb Raider - The Last Revelation
+            # save's first block in the multiblock save has calculated XOR 124
+            # stored XOR 123 and works fine on PS2 - Gran Turismo and Gran
+            # Turismo 2 are other examples. Testing GT1 specifically, copying
+            # the save to a different card and reimaging results in exactly
+            # the same XOR failure - yet the save loads fine on the PS2. It
+            # flat out doesnt on the Pandora, but there'll be another reason
+            # for that. Because it works on the console, I think this isn't a
+            # real example of corruption
             accumulator = 0
             for byteAddress in range(offset, offset + FRAME_SIZE - 1):
                 accumulator ^= controlBlock[byteAddress]
-            storedXOR = controlBlock[offset + FRAME_SIZE - 1]
+            if accumulator != controlBlock[offset + FRAME_SIZE - 1]:
+                print('Warning: The passed memory card \'%s\' contains an'
+                ' invalid frame in the control block (frame %d of block 0'
+                ' which describes block %d), and is therefore in theory '
+                'corrupt. However, I have examples of multiblock saves '
+                'where they appear to work fine - so just raising a '
+                'warning\n\n'
+                'Calculated XOR value: %s\nRecorded value: %s\n' %
+                (self.path, blockNumber, blockNumber, accumulator,
+                controlBlock[offset + FRAME_SIZE - 1]), file=sys.stderr)
             
             # Debug code
             #print('accumulator: %d\nActual XOR: %d' % (accumulator,
@@ -298,17 +315,7 @@ class PS1Card(object):
                 
                 # First block on its own or the first block in a multiblock
                 # save, or the block is deleted (still reporting as it may
-                # contain a recoverable save) - checking the frame XOR
-                if accumulator != storedXOR:
-                    raise Exception('The passed memory card \'%s\' contains an'
-                                    ' invalid frame in the control block ('
-                                    'frame %d of block 0), and is therefore '
-                                    'corrupt\n\n'
-                                    'Calculated XOR value: %s\nRecorded value:'
-                                    ' %s' % (self.path, blockNumber,
-                                       accumulator,
-                                       controlBlock[offset + FRAME_SIZE - 1]))
-
+                # contain a recoverable save)
                 # How many blocks the save consists of. This is only valid if the
                 # block is the first block in the save - otherwise its always 1
                 # block long
@@ -328,38 +335,15 @@ class PS1Card(object):
                 # progress (new game = new playthrough)
                 gamePlayThroughIdentifier = controlBlock[offset + 22:offset + 31]
             
-            elif (blockStatus == 0x52 or blockStatus == 0x53):
+            elif (blockStatus == 0x52 or blockStatus == 0x53 or
+                  blockStatus == 0xA0):
 
-                # Block is in the middle or at the end of a multiblock save
-                # I have now got 3 examples of 'corrupt' frames with
-                # >first block in multiblock saves - Gran Turismo, Gran
-                # Turismo 2 and Tomb Raider - The Last Revelation. Testing GT1
-                # specifically, copying the save to a different card and
-                # reimaging results in exactly the same XOR failure - yet the
-                # save loads fine on the PS2. It flat out doesnt on the
-                # Pandora, but there'll be another reason for that. Because it
-                # works on the console, I think this isn't a real example of
-                # corruption
-                if accumulator != storedXOR:
-                    print('Warning: The passed memory card \'%s\' contains an'
-                    ' invalid frame in the control block (frame %d of block 0'
-                    ' which describes block %d), and is therefore in theory '
-                    'corrupt. However, I have examples of multiblock saves '
-                    'where they appear to work fine - so just raising a '
-                    'warning\n\n'
-                    'Calculated XOR value: %s\nRecorded value: %s\n' %
-                    (self.path, blockNumber, blockNumber, accumulator,
-                    controlBlock[offset + FRAME_SIZE - 1]), file=sys.stderr)
-                
+                # Block is in the middle or at the end of a multiblock save,
+                # or is unused
                 # Setting variables to None
                 # It seems in linked saves, middle blocks onwards have old
                 # (past save?) data saved in these metadata frames, and are
                 # therefore invalid
-                gamePlayThroughIdentifier = productCode = countryCode = saveNextBlock = saveLength = None
-
-            elif blockStatus == 0xA0:
-
-                # Block is unused - setting variables to None
                 gamePlayThroughIdentifier = productCode = countryCode = saveNextBlock = saveLength = None
 
             # Delete (0xA1) is already handled in single block case
@@ -373,7 +357,6 @@ class PS1Card(object):
 
                 # Setting variables to None
                 gamePlayThroughIdentifier = productCode = countryCode = saveNextBlock = saveLength = None
-
 
             else:
 
