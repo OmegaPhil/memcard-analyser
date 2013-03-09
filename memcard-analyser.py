@@ -58,11 +58,18 @@ BLOCK_NORMAL_MAGIC = b'SC'
 FRAME_SIZE = 128
 FRAMES_IN_BLOCK = 64
 BLOCK_SIZE = FRAME_SIZE * FRAMES_IN_BLOCK
-BLOCK_STATUS = {0xA0: 'Unused block',  # Integers need to be used as a single
-                0x51: 'First block',   # byte indexed is an integer
-                0x52: 'Middle block',
+BLOCK_STATUS = {0x51: 'First block',   # Integers need to be used as a single
+                0x52: 'Middle block',  # byte indexed is an integer
                 0x53: 'Last block',
+                0xA0: 'Unused block',
+                0xA1: 'Deleted block',
                 0xFF: 'Unusable block'}
+BLOCK_VALID_INFORMATION = {0xA0: False,  # Used to determine whether a
+                0xA1: True,  # particular block's data should be reported on
+                0x51: True,
+                0x52: False,
+                0x53: False,
+                0xFF: False}
 SAVE_LENGTH = {b'\x00\x20\x00': '1 block',
                b'\x00\x40\x00': '2 blocks',
                b'\x00\x60\x00': '3 blocks',
@@ -287,10 +294,11 @@ class PS1Card(object):
             blockStatus = controlBlock[offset]
 
             # Checking block status
-            if blockStatus == 0x51:
+            if (blockStatus == 0x51 or blockStatus == 0xA1):
                 
                 # First block on its own or the first block in a multiblock
-                # save - checking the frame XOR
+                # save, or the block is deleted (still reporting as it may
+                # contain a recoverable save) - checking the frame XOR
                 if accumulator != storedXOR:
                     raise Exception('The passed memory card \'%s\' contains an'
                                     ' invalid frame in the control block ('
@@ -349,6 +357,13 @@ class PS1Card(object):
                 # therefore invalid
                 gamePlayThroughIdentifier = productCode = countryCode = saveNextBlock = saveLength = None
 
+            elif blockStatus == 0xA0:
+
+                # Block is unused - setting variables to None
+                gamePlayThroughIdentifier = productCode = countryCode = saveNextBlock = saveLength = None
+
+            # Delete (0xA1) is already handled in single block case
+
             elif blockStatus == 0xFF:
 
                 # Block is unusable - no XOR check needed - warning user
@@ -358,7 +373,17 @@ class PS1Card(object):
 
                 # Setting variables to None
                 gamePlayThroughIdentifier = productCode = countryCode = saveNextBlock = saveLength = None
-                
+
+
+            else:
+
+                # Invalid block status detected - erroring
+                raise Exception('The passed memory card \'%s\' contains '
+                                'block %d that has an invalid (unknown) '
+                                'status (\'%s\') - described in block 0 frame'
+                                '%d' % (self.path, blockNumber, blockStatus,
+                                        blockNumber))
+
             # Instantiating memory card block object and saving - note that
             # this is missing the save title, which is contained in the
             # actual block itself
@@ -477,14 +502,14 @@ class PS1CardBlock(object):
     # countryCode property, not allowed to set
     def _get_countryCode(self):
 
-        # Checking if the save isn't a first block
-        if 'First' not in self.blockStatus:
+        # Checking if the block contains reportable data
+        if not BLOCK_VALID_INFORMATION[self._blockStatus]:
 
-            # It isnt - no data is available
+            # It doesnt
             return '-'
         else:
 
-            # It is - returning useful form of country code via lookup. Note
+            # It does - returning useful form of country code via lookup. Note
             # that this keeps the b''... might need to redefine binary
             # str somehow??
             return '%s (%s)' % (COUNTRY_CODE[self._countryCode],
@@ -495,14 +520,14 @@ class PS1CardBlock(object):
     # filename property, not allowed to set
     def _get_filename(self):
 
-        # Checking if the save isn't a first block
-        if 'First' not in self.blockStatus:
+        # Checking if the block contains reportable data
+        if not BLOCK_VALID_INFORMATION[self._blockStatus]:
 
-            # It isnt - no data is available
+            # It doesnt
             return '-'
         else:
 
-            # It is. 'File name' as named by the PS3devwiki article is a
+            # It does. 'File name' as named by the PS3devwiki article is a
             # concatenation of other identifiers
             return str(self._countryCode + self.productCode +
                     self.gamePlayThroughIdentifier)
@@ -512,14 +537,14 @@ class PS1CardBlock(object):
     # gamePlayThroughIdentifier property, not allowed to set
     def _get_gamePlayThroughIdentifier(self):
 
-        # Checking if the save isn't a first block
-        if 'First' not in self.blockStatus:
+        # Checking if the block contains reportable data
+        if not BLOCK_VALID_INFORMATION[self._blockStatus]:
 
-            # It isnt - no data is available
+            # It doesnt
             return '-'
         else:
 
-            # It is - valid gamePlayThroughIdentifier available - stripping
+            # It does - valid gamePlayThroughIdentifier available - stripping
             # trailing null bytes
             return self._gamePlayThroughIdentifier.rstrip(b'\x00')
 
@@ -528,14 +553,14 @@ class PS1CardBlock(object):
     # productCode property, not allowed to set
     def _get_productCode(self):
 
-        # Checking if the save isn't a first block
-        if 'First' not in self.blockStatus:
+        # Checking if the block contains reportable data
+        if not BLOCK_VALID_INFORMATION[self._blockStatus]:
 
-            # It isnt - no data is available
+            # It doesnt
             return '-'
         else:
 
-            # It is - valid product code available
+            # It does - valid product code available
             return self._productCode
 
     productCode = property(_get_productCode)
@@ -543,14 +568,14 @@ class PS1CardBlock(object):
     # saveLength property, not allowed to set
     def _get_saveLength(self):
         
-        # Checking if the save isn't a first block
-        if 'First' not in self.blockStatus:
+        # Checking if the block contains reportable data
+        if not BLOCK_VALID_INFORMATION[self._blockStatus]:
             
-            # It isnt - no data is available
+            # It doesnt
             return '-'
         else:
             
-            # It is - valid save length available
+            # It does - valid save length available
             return SAVE_LENGTH[self._saveLength]
         
     saveLength = property(_get_saveLength)
@@ -558,14 +583,14 @@ class PS1CardBlock(object):
     # title property, allowed to get and set
     def _get_title(self):
 
-        # Checking if the save isn't a first block
-        if 'First' not in self.blockStatus:
+        # Checking if the block contains reportable data
+        if not BLOCK_VALID_INFORMATION[self._blockStatus]:
 
-            # It isnt - no data is available
+            # It doesnt
             return '-'
         else:
 
-            # It is - valid title available
+            # It does - valid title available
             return self._title
 
     def _set_title(self, title):
