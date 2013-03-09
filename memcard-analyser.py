@@ -454,11 +454,8 @@ class PS1CardBlock(object):
 
             # It is. 'File name' as named by the PS3devwiki article is a
             # concatenation of other identifiers
-            filename = str(self._countryCode + self.productCode +
+            return str(self._countryCode + self.productCode +
                     self.gamePlayThroughIdentifier)
-            return filename.replace(str(0x00), '')
-    
-        # WIP: How do I remove the trialing null bytes from filename and the identifier in general? this seems to be a general bytes problem 
         
     filename = property(_get_filename)
 
@@ -472,8 +469,9 @@ class PS1CardBlock(object):
             return '-'
         else:
 
-            # It is - valid gamePlayThroughIdentifier available
-            return self._gamePlayThroughIdentifier
+            # It is - valid gamePlayThroughIdentifier available - stripping
+            # trailing null bytes
+            return self._gamePlayThroughIdentifier.rstrip(b'\x00')
 
     gamePlayThroughIdentifier = property(_get_gamePlayThroughIdentifier)
 
