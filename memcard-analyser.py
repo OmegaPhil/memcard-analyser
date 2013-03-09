@@ -544,35 +544,6 @@ parser.add_option('-l', '--list', dest='list', help='list contents of memory '
 parser.add_option('-v', '--verbose', dest='verbose', help='output useful '
 'information about what the program is doing', action='store_true',
 default=False)
-#'define when a CRC32 hash is added to a filename where none has been found. '
-#'Defaults to \'none\', \'ask\' prompts the user after hashing and \'always\' '
-#'causes the hash to automatically be added when missing',
-#metavar='addHashMode', choices=('none', 'ask', 'always'), default='none')
-#parser.add_option('-c', '--checksum-read-mode', dest='checksum_read_mode',
-#help='mode to look for checksum files and then hash the files as \
-#described within. All files passed are searched for recognised checksum files'
-#' (others are ignored) and processed in order of discovery',
-#metavar='checksumMode', action='store_true', default=False)
-#parser.add_option('-e', '--ed2k-link-mode', dest='ed2k_link_mode',
-#help='mode to hash given files and output eD2k links',
-#metavar='checksumMode', action='store_true', default=False)
-#parser.add_option('-l', '--links', dest='ignore_links',
-#help='follow symlinks and hardlinks when encountered. By default links are '
-#'ignored completely unless they are referenced in a checksum file being '
-#'checked', metavar='ignore_links', action='store_false', default=True)
-#parser.add_option('-m', '--md5-create-mode', dest='md5_create_mode',
-#help='mode to create an md5 file from the files passed - see -o',
-#metavar='md5_create_mode', action='store_true', default=False)
-#parser.add_option('-M', '--md5-hash-mode', dest='md5_hash_mode',
-#help='mode to hash given files and output md5 hashes',
-#metavar='md5_hash_mode', action='store_true', default=False)
-#parser.add_option('-o', '--checksum-output', dest='checksumOutput',
-#help='path to output checksum file to (only valid in checksum file creation '
-#'modes). If omitted, the file is output to the hashed files\' common root '
-#'directory', metavar='checksumOutput', default=None)
-#parser.add_option('-s', '--sfv-create-mode', dest='sfv_create_mode',
-#help='mode to create an sfv file from the files passed - see -o',
-#metavar='sfv_create_mode', action='store_true', default=False)
 (options, args) = parser.parse_args()
 
 if args:
