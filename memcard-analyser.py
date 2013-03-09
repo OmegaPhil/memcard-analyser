@@ -29,6 +29,7 @@ import io
 import os.path
 import string
 import sys
+import unicodedata
 
 from optparse import OptionParser
 
@@ -390,31 +391,46 @@ class PS1Card(object):
                 # save title - Shift-JIS encoded. This looks like the
                 # characters are double-spaced, but according to the bits
                 # they aren't... all 3 shift-jis encodings look like arse
-                self[blockNumber].title = block[4:68].decode('shift-jis')
-                
-                # Debug code
-                #print('shift-jis: %s\nshift_jis_2004: %s\nshift_jisx0213: %s'
-                #      'euc_jp: %s'
-                #      % (block[4:68].decode('shift-jis'),
-                #         block[4:68].decode('shift_jis_2004'),
-                #         block[4:68].decode('shift_jisx0213'))) 
+                self[blockNumber].title = self.shift_jis_decoder(block[4:68])
                 
                 # Verbose output
                 if options.verbose:
                     print('Block %d save title: \'%s\'' % (blockNumber,
                                                     self[blockNumber].title))
-            
+
             else:
-                
+
                 # Block is linked as part of a multiblock save - pure data
                 # Verbose output
                 if options.verbose:
                     print('Block %d is a linked block' % blockNumber)
                 
-        # Debug code
-        # Note the leading 'b and trailing '
-        #print('Control block:\n\n%s' % controlBlock.translate(translationTable))
-        
+    def shift_jis_decoder(self, titleBytes):
+        '''Attempt to decode passed bytes via shift-jis encoding, discarding
+        any invalid/non-printable bytes at the end'''
+
+        # Most save titles use valid shift-jis, but some leave crap data
+        # straight after the title
+
+        # Permissive encoding to get the basic valid string
+        title = titleBytes.decode('shift-jis', 'replace')
+
+        # Searching for the first control character - this appears to end the
+        # user-valid data
+        for i in range(len(title)):
+            if unicodedata.category(title[i]) == 'Cc':
+
+                # Control character found - breaking after setting valid title
+                title = title[:i]
+                break
+
+        # Returning valid title
+        return title
+
+    # Debug code
+    # Note the leading 'b and trailing '
+    #print('Control block:\n\n%s' % controlBlock.translate(translationTable))
+
 
 class PS1CardBlock(object):
     
