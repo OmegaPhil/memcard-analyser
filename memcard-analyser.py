@@ -27,7 +27,6 @@ There is NO WARRANTY, to the extent permitted by law.
 
 import io
 import os.path
-import re  # Used for escape function
 import string
 import sys
 
