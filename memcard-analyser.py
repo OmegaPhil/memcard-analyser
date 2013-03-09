@@ -297,12 +297,11 @@ class PS1Card(object):
             # link is relatively in a multi-block save)
             blockStatus = controlBlock[offset]
             
-            # TODO: Seems in linked saves, middle onwards have old (past save?) data saved in these metadata frames, and are therefore invalid
-            
-            # Checking if the block is unused
-            if blockStatus != b'\0xA0':
+            # Checking if the block is a 'first block' on its own or in a
+            # multiblock save
+            if blockStatus == 0x51:
                 
-                # It isnt - processing
+                # It is - processing
                 # How many blocks the save consists of. This is only valid if the
                 # block is the first block in the save - otherwise its always 1
                 # block long
@@ -324,7 +323,11 @@ class PS1Card(object):
             
             else:
                 
-                # It is unused - setting variables to None
+                # It isn't - it is either unused or part of a multiblock save
+                # - setting variables to None
+                # It seems in linked saves, middle blocks onwards have old
+                # (past save?) data saved in these metadata frames, and are
+                # therefore invalid
                 gamePlayThroughIdentifier = productCode = countryCode = saveNextBlock = saveLength = None
                 
             # Instantiating memory card block object and saving - note that
@@ -402,9 +405,9 @@ class PS1CardBlock(object):
         self._saveLength = saveLength
         self._saveNextBlock = saveNextBlock
         self._countryCode = countryCode
-        self.productCode = productCode
-        self.gamePlayThroughIdentifier = gamePlayThroughIdentifier
-        self.title = None  # This is set when blocks themselves are parsed
+        self._productCode = productCode
+        self._gamePlayThroughIdentifier = gamePlayThroughIdentifier
+        self._title = None  # This is set when blocks themselves are parsed
 
         # Verbose output
         if options.verbose:
@@ -434,40 +437,104 @@ class PS1CardBlock(object):
 
     # countryCode property, not allowed to set
     def _get_countryCode(self):
-        
-        # Returning useful form of country code via lookup. Note that this
-        # keeps the b''... might need to redefine binary str somehow??
-        return '%s (%s)' % (COUNTRY_CODE[self._countryCode], self._countryCode) 
+
+        # Checking if the save isn't a first block
+        if 'First' not in self.blockStatus:
+
+            # It isnt - no data is available
+            return '-'
+        else:
+
+            # It is - returning useful form of country code via lookup. Note
+            # that this keeps the b''... might need to redefine binary
+            # str somehow??
+            return '%s (%s)' % (COUNTRY_CODE[self._countryCode],
+                                self._countryCode)
         
     countryCode = property(_get_countryCode)
 
     # filename property, not allowed to set
     def _get_filename(self):
-        
-        # 'File name' as named by the PS3devwiki article is a concatenation of
-        # other identifiers
-        filename = str(self._countryCode + self.productCode + 
-                self.gamePlayThroughIdentifier)
-        return filename.replace(str(0x00), '')
+
+        # Checking if the save isn't a first block
+        if 'First' not in self.blockStatus:
+
+            # It isnt - no data is available
+            return '-'
+        else:
+
+            # It is. 'File name' as named by the PS3devwiki article is a
+            # concatenation of other identifiers
+            filename = str(self._countryCode + self.productCode +
+                    self.gamePlayThroughIdentifier)
+            return filename.replace(str(0x00), '')
     
         # WIP: How do I remove the trialing null bytes from filename and the identifier in general? this seems to be a general bytes problem 
         
     filename = property(_get_filename)
 
+    # gamePlayThroughIdentifier property, not allowed to set
+    def _get_gamePlayThroughIdentifier(self):
+
+        # Checking if the save isn't a first block
+        if 'First' not in self.blockStatus:
+
+            # It isnt - no data is available
+            return '-'
+        else:
+
+            # It is - valid gamePlayThroughIdentifier available
+            return self._gamePlayThroughIdentifier
+
+    gamePlayThroughIdentifier = property(_get_gamePlayThroughIdentifier)
+
+    # productCode property, not allowed to set
+    def _get_productCode(self):
+
+        # Checking if the save isn't a first block
+        if 'First' not in self.blockStatus:
+
+            # It isnt - no data is available
+            return '-'
+        else:
+
+            # It is - valid product code available
+            return self._productCode
+
+    productCode = property(_get_productCode)
+
     # saveLength property, not allowed to set
     def _get_saveLength(self):
         
-        # Checking if the save is a linked block
+        # Checking if the save isn't a first block
         if 'First' not in self.blockStatus:
             
-            # It is - save length is invalid (1 is returned)
+            # It isnt - no data is available
             return '-'
         else:
             
-            # It isn't - valid save length available
+            # It is - valid save length available
             return SAVE_LENGTH[self._saveLength]
         
     saveLength = property(_get_saveLength)
+
+    # title property, allowed to get and set
+    def _get_title(self):
+
+        # Checking if the save isn't a first block
+        if 'First' not in self.blockStatus:
+
+            # It isnt - no data is available
+            return '-'
+        else:
+
+            # It is - valid title available
+            return self._title
+
+    def _set_title(self, title):
+        self._title = title
+
+    title = property(_get_title, _set_title)
 
 
 # Configuring and parsing passed options
