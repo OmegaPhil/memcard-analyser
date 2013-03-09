@@ -297,7 +297,7 @@ class PS1Card(object):
                                     'frame %d of block 0), and is therefore '
                                     'corrupt\n\n'
                                     'Calculated XOR value: %s\nRecorded value:'
-                                    ' %s' % (self.path, offset / FRAME_SIZE,
+                                    ' %s' % (self.path, blockNumber,
                                        accumulator,
                                        controlBlock[offset + FRAME_SIZE - 1]))
 
@@ -334,12 +334,13 @@ class PS1Card(object):
                 # corruption
                 if accumulator != storedXOR:
                     print('Warning: The passed memory card \'%s\' contains an'
-                    ' invalid frame in the control block (frame %d of block 0)'
-                    ', and is therefore in theory corrupt. However, I have '
-                    'examples of multiblock saves where they appear to work'
-                    ' fine - so just raising a warning\n\n'
+                    ' invalid frame in the control block (frame %d of block 0'
+                    ' which describes block %d), and is therefore in theory '
+                    'corrupt. However, I have examples of multiblock saves '
+                    'where they appear to work fine - so just raising a '
+                    'warning\n\n'
                     'Calculated XOR value: %s\nRecorded value: %s\n' %
-                    (self.path, offset / FRAME_SIZE, accumulator,
+                    (self.path, blockNumber, blockNumber, accumulator,
                     controlBlock[offset + FRAME_SIZE - 1]), file=sys.stderr)
                 
                 # Setting variables to None
