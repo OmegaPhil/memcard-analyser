@@ -589,9 +589,20 @@ parser.add_option('-l', '--list', dest='list', help='list contents of memory '
 parser.add_option('-v', '--verbose', dest='verbose', help='output useful '
 'information about what the program is doing', action='store_true',
 default=False)
+parser.add_option('-x', '--extract', dest='extract', help='extract the data '
+'region of a save (without the header) beginning from the desired block '
+'(further blocks included if it is a multiblock save) to the named file, or '
+'\'<memory card image path>.block_<block number>.bin\' by default',
+metavar='extract', action='store_true', default=False)
 (options, args) = parser.parse_args()
 
 if args:
+    
+    # Making sure only one mode is used at once
+    if (options.list + options.extract) > 1:
+        print(parser.get_usage() + '\nOnly one mode can be enabled at once\n',
+              file=sys.stderr)
+        sys.exit(1)
     
     # Verbose output
     if options.verbose:
@@ -601,7 +612,9 @@ if args:
     memoryCard = PS1Card(args[0])
     
     # Listing contents
-    if options.list:
+    if options.extract:
+        memoryCard.extract()
+    elif options.list:
         memoryCard.list()
 
 else:
