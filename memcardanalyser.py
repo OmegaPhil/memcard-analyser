@@ -106,7 +106,7 @@ COUNTRY_CODE = {b'BI': 'Japan',  # Road Rash has saves which use the lower
 # method, you get a UnicodeDecodeError complaining about trying to
 # interpret the data as ASCII. Fail!
 # In Python 3, this table is used with bytes data and therefore due to
-# stubbornness it must be encoded via ASCII to bytes... 
+# stubbornness it must be encoded via ASCII to bytes...
 translationTable = bytes(''.join([['.', chr(x)][chr(x) in string.printable]
                             for x in range(256)]), 'ascii')
 
@@ -434,14 +434,15 @@ class PS1Card(object):
             print('Control block parsing complete. Parsing actual blocks...')
         for blockNumber in range(1, 16):
 
-            # Verbose output
-            if options.verbose:
-                print('\nParsing block %d...' % blockNumber)
-
             # Fetching current block and saving (skips block 0)
             offset += BLOCK_SIZE
             block = self.image[offset:offset + BLOCK_SIZE]
-            self[blockNumber].data = block 
+            self[blockNumber].data = block
+
+            # Verbose output
+            if options.verbose:
+                print('\nParsing block %d, bytes %d to %d...'
+                      % (blockNumber, offset, offset + BLOCK_SIZE - 1))
 
             # Checking for a normal one-block save or the first block in a
             # multiblock save
