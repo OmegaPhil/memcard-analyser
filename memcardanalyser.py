@@ -215,8 +215,8 @@ class PS1Card(object):
 
         # Verbose output
         if options.verbose:
-            print('Extracting data from block %d to \'%s\'...' % blockNumber,
-                  outputPath)
+            print('Extracting data from block %d to \'%s\'...' % (blockNumber,
+                  outputPath))
 
         # Creating output directory if it doesn't exist
         if not os.path.isdir(os.path.dirname(outputPath)):
@@ -234,7 +234,7 @@ class PS1Card(object):
         # Verbose output
         if options.verbose:
             print('Writing save data from memory card image byte %d to %d to '
-                  '\'%s\'...' % (offset, nextBlockOffset - 1), outputPath)
+                  '\'%s\'...' % (offset, nextBlockOffset - 1, outputPath))
 
         # Outputting save data to file
         with io.open(outputPath, 'wb') as outputFile:
@@ -695,6 +695,9 @@ if args:
             outputPath = options.output
         else:
             outputPath = '%s.block_%d.bin' % (args[0], options.extract)
+
+        # Turning into an absolute path
+        outputPath = os.path.abspath(outputPath)
 
         # Extracting
         memoryCard.extract(options.extract, outputPath)
