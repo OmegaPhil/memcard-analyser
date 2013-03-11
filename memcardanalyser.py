@@ -209,7 +209,58 @@ class PS1Card(object):
         # Verbose output
         if options.verbose:
             print('Image is %s format' % self.format)
-    
+
+    def extract(self, blockNumber, outputPath):
+        '''Extract save data (minus headers) from block to given path'''
+
+        # Verbose output
+        if options.verbose:
+            print('Extracting data from block %d to \'%s\'...' % blockNumber,
+                  outputPath)
+
+        # Creating output directory if it doesn't exist
+        if not os.path.isdir(os.path.dirname(outputPath)):
+            os.makedirs(os.path.dirname(outputPath))
+
+        # Setting offset at beginning of relevant block and determining the
+        # next block
+        offset = self.format_offset() + blockNumber * BLOCK_SIZE
+        nextBlockOffset = offset + BLOCK_SIZE
+
+        # This is the first block of a save, so skipping irrelevant headers
+        # which are 4 frames long (title, icon etc)
+        offset += 4 * FRAME_SIZE
+
+        # Verbose output
+        if options.verbose:
+            print('Writing save data from memory card image byte %d to %d to '
+                  '\'%s\'...' % (offset, nextBlockOffset - 1), outputPath)
+
+        # Outputting save data to file
+        with io.open(outputPath, 'wb') as outputFile:
+            outputFile.write(self.image[offset:nextBlockOffset])
+
+            # Looping for further blocks of a multiblock save
+            i = 1
+            while (self[blockNumber + i].blockStatus == 'Middle block' or
+                    self[blockNumber + i].blockStatus == 'Last block' or
+                    self[blockNumber + i].blockStatus == 'Deleted block'):
+
+                # Calculating the next offsets - after the first block,
+                # further blocks do not have headers
+                offset = nextBlockOffset
+                nextBlockOffset += BLOCK_SIZE
+
+                # Writing data
+                outputFile.write(self.image[offset:nextBlockOffset])
+
+                # Looping for the next block
+                i += 1
+
+        # Verbose output
+        if options.verbose:
+            print('Data written')
+
     def format_offset(self):
         '''Returning the starting point of the memory card data based on the
         format'''
@@ -583,23 +634,26 @@ class PS1CardBlock(object):
 
 
 # Configuring and parsing passed options
+# TODO: Write up about type checking here
 parser = OptionParser(version=('%%prog %s%s' % (VERSION, GPL_NOTICE)))
 parser.add_option('-l', '--list', dest='list', help='list contents of memory '
 'card image', metavar='list', action='store_true', default=False)
+parser.add_option('-o', '--output', dest='output', help='path to output file',
+metavar='output', default=None)
 parser.add_option('-v', '--verbose', dest='verbose', help='output useful '
 'information about what the program is doing', action='store_true',
 default=False)
-parser.add_option('-x', '--extract', dest='extract', help='extract the data '
-'region of a save (without the header) beginning from the desired block '
-'(further blocks included if it is a multiblock save) to the named file, or '
-'\'<memory card image path>.block_<block number>.bin\' by default',
-metavar='extract', action='store_true', default=False)
+parser.add_option('-x', '--extract', dest='extract', type='int',
+help='extract the data region of a save (without the header) beginning from '
+'the desired block further blocks included if it is a multiblock save) to the'
+' file specified in --output, or \'<memory card image path>.block_<block '
+'number>.bin\' by default', metavar='extract', default=None)
 (options, args) = parser.parse_args()
 
 if args:
 
     # Making sure only one mode is used at once
-    if (options.list + options.extract) > 1:
+    if (options.list + bool(options.extract)) > 1:
         print(parser.get_usage() + '\nOnly one mode can be enabled at once\n',
               file=sys.stderr)
         sys.exit(1)
@@ -610,12 +664,49 @@ if args:
 
     # Instantiating memory card
     memoryCard = PS1Card(args[0])
-    
-    # Listing contents
+
     if options.extract:
-        memoryCard.extract()
+
+        # Extracting block(s) from memory card image
+        # Validating block requested (tests such as '<block number> in
+        # memoryCard' seem to fail as this works on identities rather than just
+        # the number?)
+        try:
+            block = memoryCard[options.extract]
+
+        except Exception:
+
+            print('\nThe requested block to extract (\'%s\') is not valid\n'
+                  % options.extract, file=sys.stderr)
+            sys.exit(1)
+
+        # Making sure the passed block is the first block of a save, or at
+        # least a deleted block
+        if (block.blockStatus != 'First block' and
+            block.blockStatus != 'Deleted block'):
+            print('\nThe requested block to extract (\'%s\') is neither the '
+                  'first block of a save or a deleted block - status: \'%s\'n'
+                  % (options.extract, block.blockStatus), file=sys.stderr)
+            sys.exit(1)
+
+        # Determining outputPath
+        if options.output:
+            outputPath = options.output
+        else:
+            outputPath = '%s.block_%d.bin' % (args[0], options.extract)
+
+        # Extracting
+        memoryCard.extract(options.extract, outputPath)
+
     elif options.list:
+
+        # Listing contents
         memoryCard.list()
+
+    else:
+
+        # Invalid options
+        parser.print_help()
 
 else:
 
