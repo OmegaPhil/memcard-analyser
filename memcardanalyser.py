@@ -38,7 +38,7 @@ from optparse import OptionParser
 # https://sourceforge.net/projects/dexux/ , more save information from
 # http://www.ps3devwiki.com/wiki/Game_Saves#Memory_card_PS1_.28original.29
 
-# TODO: A lot of progression has been obtained here - I need to write it up 
+# TODO: A lot of progression has been obtained here - I need to write it up
 
 # Initialising variables
 VERSION = '0.01'  # Remember version in copyright notice
@@ -47,7 +47,7 @@ VERSION = '0.01'  # Remember version in copyright notice
 IMAGE_SIZE = 131072
 GME_MAGIC = b'123-456-STD'
 GME_HEADER_SIZE = 3904
-MCD_MAGIC = b'MC' 
+MCD_MAGIC = b'MC'
 MCD_HEADER_SIZE = 0
 
 # Memory card data structure
@@ -112,9 +112,9 @@ translationTable = bytes(''.join([['.', chr(x)][chr(x) in string.printable]
 
 class PS1Card(object):
     '''Representation of memory card, also maintaining the original data'''
-    
+
     def __init__(self, cardPath):
-        
+
         # Initialising variables
         self.format = 'unknown'
         self.path = cardPath
@@ -122,7 +122,7 @@ class PS1Card(object):
         self._blocks = [None for i in range(16)]  # Store for instantiated
                                                   # memory card blocks - 0 is
                                                   # 'padding'
-        
+
         # Validating passed card path
         if not os.path.isfile(cardPath):
             raise Exception('The passed memory card \'%s\' does not exist' %
@@ -131,7 +131,7 @@ class PS1Card(object):
         # Verbose output
         if options.verbose:
             print('Loading memory card image...')
-        
+
         # Loading memory card image
         with io.open(cardPath, "rb") as cardImage:
             self.image = cardImage.read()
@@ -139,22 +139,22 @@ class PS1Card(object):
         # Verbose output
         if options.verbose:
             print('Memory card image loaded')
-        
+
         # Determining format of image (and therefore validating it)
         self.determine_format_and_validate()
-        
+
         # Parsing card
         self.parse()
-    
+
     def __getitem__(self, blockNumber):
         '''Intercepting indexing operations to allow blocks to be
         referenced'''
-        
+
         # Making sure the index is in an appropriate range
         if not (blockNumber >= 1 and blockNumber <= 15):
             raise Exception('Invalid memory card block number requested: %s'
                             % blockNumber)
-        
+
         # Making sure the block has been instantiated
         if self._blocks[blockNumber] == None:
             raise Exception('Memory card block %s requested before '
@@ -162,28 +162,28 @@ class PS1Card(object):
 
         # Returning requested block
         return self._blocks[blockNumber]
-    
+
     def __setitem__(self, blockNumber, block):
         '''Intercepting indexing operations to allow blocks to be
         saved'''
-        
+
         # Making sure the index is in an appropriate range
         if not (blockNumber >= 1 and blockNumber <= 15):
             raise Exception('Invalid memory card block number requested: %s'
                             % blockNumber)
-        
+
         # Making sure a block has actually been passed
         if not isinstance(block, PS1CardBlock):
             raise Exception('Attempt to save an invalid memory card block to '
                             'block number %s:\n\n%s' % (blockNumber, block))
-        
+
         # Saving block in local store
         self._blocks[blockNumber] = block
-        
+
     def determine_format_and_validate(self):
         '''Determines format of the loaded binary data and does basic
         validation'''
-        
+
         # Determining format and correct image size
         if self.image[:11] == GME_MAGIC:
             self.format = 'gme'
@@ -192,12 +192,12 @@ class PS1Card(object):
             self.format = 'mcd'
             correctSize = IMAGE_SIZE
         else:
-        
+
             # Format unknown - raising error
             self.format = 'unknown'
             raise Exception('The passed memory card \'%s\' is not a known '
                             'format' % self.path)
-        
+
         # Basic validation
         if len(self.image) != correctSize:
             raise Exception('The passed memory card \'%s\' is a %s format '
@@ -213,12 +213,12 @@ class PS1Card(object):
     def format_offset(self):
         '''Returning the starting point of the memory card data based on the
         format'''
-        
+
         if self.format == 'gme':
             return GME_HEADER_SIZE
         elif self.format == 'mcd':
             return MCD_HEADER_SIZE
-    
+
     def list(self):
         '''List the contents of the memory card image'''
 
@@ -228,7 +228,7 @@ class PS1Card(object):
             '%(title)s\'\nSave length: %(saveLength)s\n'
             'Country code: %(countryCode)s\nProduct code: %(productCode)s\n'
             'Game playthrough identifier: %(gamePlayThroughIdentifier)s\n'
-            '\'File name\': %(filename)s' 
+            '\'File name\': %(filename)s'
                   % {'blockNumber': block.blockNumber,
                      'status': block.blockStatus,
                      'title': block.title,
@@ -237,33 +237,33 @@ class PS1Card(object):
                      'productCode': block.productCode,
                      'gamePlayThroughIdentifier': block.gamePlayThroughIdentifier,
                      'filename': block.filename})
-        
+
     def parse(self):
         '''Parse the card image - create object representation'''
-        
+
         # Verbose output
         if options.verbose:
             print('Parsing memory card image...')
-        
+
         # Fetching the offset to the first valid data
         offset = self.format_offset()
-        
+
         # Fetching the header/metadata block, block 0
         if options.verbose:
             print('Parsing control block (block 0)...')
         controlBlock = self.image[offset:offset + BLOCK_SIZE]
-        
+
         # Debug code
         #print(controlBlock[:len(BLOCK_0_MAGIC)])
         #print(controlBlock[FRAME_SIZE - 1])
-        
+
         # Validating block 0
         if (controlBlock[:len(BLOCK_0_MAGIC)] != BLOCK_0_MAGIC or
             controlBlock[FRAME_SIZE - 1] != BLOCK_0_XOR):
             raise Exception('The passed memory card \'%s\' contains an '
                             'invalid control block (block 0), and is '
                             'therefore corrupt' % self.path)
-        
+
         # Looping for all block-describing frames in the control block,
         # ignoring its own frame... (remember that the end of the range
         # given is the desired end + 1)
@@ -300,11 +300,11 @@ class PS1Card(object):
                 'warning\n\n'
                 'Calculated XOR value: %s\nRecorded value: %s\n' %
                 (self.path, blockNumber, blockNumber, accumulator,
-                controlBlock[offset + FRAME_SIZE - 1]), file=sys.stderr)
-            
+                 controlBlock[offset + FRAME_SIZE - 1]), file=sys.stderr)
+
             # Debug code
             #print('accumulator: %d\nActual XOR: %d' % (accumulator,
-            #                            controlBlock[offset + FRAME_SIZE - 1]))
+            #                          controlBlock[offset + FRAME_SIZE - 1]))
 
             # Is block in use, a normal block, a link block (and where the
             # link is relatively in a multi-block save) or unusable
@@ -312,29 +312,29 @@ class PS1Card(object):
 
             # Checking block status
             if (blockStatus == 0x51 or blockStatus == 0xA1):
-                
+
                 # First block on its own or the first block in a multiblock
                 # save, or the block is deleted (still reporting as it may
                 # contain a recoverable save)
-                # How many blocks the save consists of. This is only valid if the
-                # block is the first block in the save - otherwise its always 1
-                # block long
+                # How many blocks the save consists of. This is only valid if
+                # the block is the first block in the save - otherwise its
+                # always 1 block long
                 saveLength = controlBlock[offset + 4:offset + 7]
-                
-                # Location of next block of multi-block save - not sure how useful
-                # this is?
+
+                # Location of next block of multi-block save - not sure how
+                # useful this is?
                 saveNextBlock = controlBlock[offset + 8:offset + 10]
-                
+
                 # Country (region rather) code
                 countryCode = controlBlock[offset + 10:offset + 12]
-                
-                # The game code - printed on the spine of game case insert 
+
+                # The game code - printed on the spine of game case insert
                 productCode = controlBlock[offset + 12:offset + 22]
-                
+
                 # Identifier unique to the game and playthrough/session in
                 # progress (new game = new playthrough)
                 gamePlayThroughIdentifier = controlBlock[offset + 22:offset + 31]
-            
+
             elif (blockStatus == 0x52 or blockStatus == 0x53 or
                   blockStatus == 0xA0):
 
@@ -374,10 +374,10 @@ class PS1Card(object):
                                             saveLength, saveNextBlock,
                                             countryCode, productCode,
                                             gamePlayThroughIdentifier)
-        
+
         # Resetting offset
         offset = self.format_offset()
-        
+
         # Control block has been parsed - looping for all other blocks
         if options.verbose:
             print('Control block parsing complete. Parsing actual blocks...')
@@ -386,22 +386,22 @@ class PS1Card(object):
             # Verbose output
             if options.verbose:
                 print('\nParsing block %d...' % blockNumber)
-            
+
             # Fetching current block and saving (skips block 0)
             offset += BLOCK_SIZE
             block = self.image[offset:offset + BLOCK_SIZE]
             self[blockNumber].data = block 
-            
+
             # Checking for a normal one-block save or the first block in a
             # multiblock save
             if (block[:len(BLOCK_NORMAL_MAGIC)] == BLOCK_NORMAL_MAGIC):
-            
+
                 # Block is normal/first of a multiblock save - obtaining
                 # save title - Shift-JIS encoded. This looks like the
                 # characters are double-spaced, but according to the bits
                 # they aren't... all 3 shift-jis encodings look like arse
                 self[blockNumber].title = self.shift_jis_decoder(block[4:68])
-                
+
                 # Verbose output
                 if options.verbose:
                     print('Block %d save title: \'%s\'' % (blockNumber,
@@ -413,7 +413,7 @@ class PS1Card(object):
                 # Verbose output
                 if options.verbose:
                     print('Block %d is a linked block' % blockNumber)
-                
+
     def shift_jis_decoder(self, titleBytes):
         '''Attempt to decode passed bytes via shift-jis encoding, discarding
         any invalid/non-printable bytes at the end'''
@@ -442,10 +442,10 @@ class PS1Card(object):
 
 
 class PS1CardBlock(object):
-    
+
     def __init__(self, blockNumber, blockStatus, saveLength, saveNextBlock,
                  countryCode, productCode, gamePlayThroughIdentifier):
-        
+
         # Initialising variables
         self.blockNumber = blockNumber
         self._blockStatus = blockStatus
@@ -476,10 +476,10 @@ class PS1CardBlock(object):
 
     # blockStatus property, not allowed to set
     def _get_blockStatus(self):
-        
+
         # Returning useful form of blockStatus via lookup
         return BLOCK_STATUS[self._blockStatus]
-        
+
     blockStatus = property(_get_blockStatus)
 
     # countryCode property, not allowed to set
@@ -497,7 +497,7 @@ class PS1CardBlock(object):
             # str somehow??
             return '%s (%s)' % (COUNTRY_CODE[self._countryCode],
                                 self._countryCode)
-        
+
     countryCode = property(_get_countryCode)
 
     # filename property, not allowed to set
@@ -514,7 +514,7 @@ class PS1CardBlock(object):
             # concatenation of other identifiers
             return str(self._countryCode + self.productCode +
                     self.gamePlayThroughIdentifier)
-        
+
     filename = property(_get_filename)
 
     # gamePlayThroughIdentifier property, not allowed to set
@@ -550,17 +550,17 @@ class PS1CardBlock(object):
 
     # saveLength property, not allowed to set
     def _get_saveLength(self):
-        
+
         # Checking if the block contains reportable data
         if not BLOCK_VALID_INFORMATION[self._blockStatus]:
-            
+
             # It doesnt
             return '-'
         else:
-            
+
             # It does - valid save length available
             return SAVE_LENGTH[self._saveLength]
-        
+
     saveLength = property(_get_saveLength)
 
     # title property, allowed to get and set
@@ -597,17 +597,17 @@ metavar='extract', action='store_true', default=False)
 (options, args) = parser.parse_args()
 
 if args:
-    
+
     # Making sure only one mode is used at once
     if (options.list + options.extract) > 1:
         print(parser.get_usage() + '\nOnly one mode can be enabled at once\n',
               file=sys.stderr)
         sys.exit(1)
-    
+
     # Verbose output
     if options.verbose:
         print('Memory card to analyse: \'%s\'' % args[0])
-    
+
     # Instantiating memory card
     memoryCard = PS1Card(args[0])
     
@@ -618,7 +618,7 @@ if args:
         memoryCard.list()
 
 else:
-    
+
     # Optparse does not properly deal with no arguments, so this needs to be
     # manually handled
     parser.print_help()
