@@ -85,12 +85,12 @@ SAVE_LENGTH = {b'\x00\x20\x00': '1 block',
                b'\x00\xA0\x01': '13 blocks',
                b'\x00\xC0\x01': '14 blocks',
                b'\x00\xE0\x01': '15 blocks'}
-COUNTRY_CODE = {b'BI': 'Japan',  # Road Rash has saves which use the lower
-                b'bi': 'Japan',  # case country code...
-                 b'BA': 'America',
-                 b'ba': 'America',
-                 b'BE': 'Europe',
-                 b'be': 'Europe'}
+COUNTRY_CODE = {'BI': 'Japan',  # Road Rash has saves which use the lower
+                'bi': 'Japan',  # case country code...
+                 'BA': 'America',
+                 'ba': 'America',
+                 'BE': 'Europe',
+                 'be': 'Europe'}
 
 # Creating a translation table to map non-printables to full stop
 # (periods for Americans). Specifically ignoring whitespace here
@@ -376,15 +376,17 @@ class PS1Card(object):
                 # useful this is?
                 saveNextBlock = controlBlock[offset + 8:offset + 10]
 
-                # Country (region rather) code
-                countryCode = controlBlock[offset + 10:offset + 12]
+                # Country (region rather) code, decoded to UTF-8 string
+                countryCode = controlBlock[offset + 10:offset + 12].decode('utf8')
 
-                # The game code - printed on the spine of game case insert
-                productCode = controlBlock[offset + 12:offset + 22]
+                # The game code - printed on the spine of game case insert,
+                # decoded to UTF-8 string
+                productCode = controlBlock[offset + 12:offset + 22].decode('utf8')
 
                 # Identifier unique to the game and playthrough/session in
-                # progress (new game = new playthrough)
-                gamePlayThroughIdentifier = controlBlock[offset + 22:offset + 31]
+                # progress (new game = new playthrough), decoded to UTF-8
+                # string
+                gamePlayThroughIdentifier = controlBlock[offset + 22:offset + 31].decode('utf8')
 
             elif (blockStatus == 0x52 or blockStatus == 0x53 or
                   blockStatus == 0xA0):
@@ -544,9 +546,7 @@ class PS1CardBlock(object):
             return '-'
         else:
 
-            # It does - returning useful form of country code via lookup. Note
-            # that this keeps the b''... might need to redefine binary
-            # str somehow??
+            # It does - returning useful form of country code via lookup
             return '%s (%s)' % (COUNTRY_CODE[self._countryCode],
                                 self._countryCode)
 
@@ -581,7 +581,9 @@ class PS1CardBlock(object):
 
             # It does - valid gamePlayThroughIdentifier available - stripping
             # trailing null bytes
-            return self._gamePlayThroughIdentifier.rstrip(b'\x00')
+            # No longer returning bytes
+            #return self._gamePlayThroughIdentifier.rstrip(b'\x00')
+            return self._gamePlayThroughIdentifier
 
     gamePlayThroughIdentifier = property(_get_gamePlayThroughIdentifier)
 
