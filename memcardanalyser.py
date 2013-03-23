@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 '''
-Version 0.01 2013.03.04
+Version 0.10 2013.03.23
 Copyright (c) 2013, OmegaPhil - OmegaPhil+memcard-analyser@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -38,10 +38,8 @@ from optparse import OptionParser
 # https://sourceforge.net/projects/dexux/ , more save information from
 # http://www.ps3devwiki.com/wiki/Game_Saves#Memory_card_PS1_.28original.29
 
-# TODO: A lot of progression has been obtained here - I need to write it up
-
 # Initialising variables
-VERSION = '0.01'  # Remember version in copyright notice
+VERSION = '0.10'  # Remember version in copyright notice
 
 # Image format
 IMAGE_SIZE = 131072
@@ -637,7 +635,6 @@ class PS1CardBlock(object):
 
 
 # Configuring and parsing passed options
-# TODO: Write up about type checking here
 parser = OptionParser(version=('%%prog %s%s' % (VERSION, GPL_NOTICE)))
 parser.add_option('-l', '--list', dest='list', help='list contents of memory '
 'card image', metavar='list', action='store_true', default=False)

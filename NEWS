@@ -1,2 +1,7 @@
+v0.10 (23.03.13):
+Listing memory cards works, initial implementation of extraction of the data
+portion of a save. I don't plan to continue working on this project - see
+readme.
+
 v0.01 (08.03.13):
 Pushing this to github early to show the code to a contact

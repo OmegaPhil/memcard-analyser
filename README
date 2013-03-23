@@ -1,6 +1,13 @@
 General
 =======
 
+23.03.13: Last week I discovered Hyne (https://sourceforge.net/projects/hyne/)
+- this is a libre Final Fantasy VIII save editor (PSX, PC) many times better
+than anything I can make. One 'save' from this tool and suddenly my old saves
+worked in pcsx-rearmed! So this project is now abandoned.
+
+------------------------------------------------------------------------------
+
 This project is currently an experiment to gain some binary file progression
 and come up with a trivial PlayStation 1 memory card image parser and editor.
 
