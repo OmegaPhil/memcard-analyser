@@ -22,11 +22,11 @@ Python v3.? - not 2 in order to have more competent unicode management.
 Documentation
 =============
 
-See memcard-analyser.py --help, although this is mainly an experiment so there
+See memcardanalyser.py --help, although this is mainly an experiment so there
 wont be much useful there (ping me if this matters).
 
 
 Contact Details
 ===============
 
-OmegaPhil: OmegaPhil+memcard-analyser@gmail.com
+OmegaPhil: OmegaPhil+memcardanalyser@gmail.com
